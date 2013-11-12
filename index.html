@@ -172,89 +172,108 @@
     </style>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script type="text/javascript" charset="utf-8">
-        $(document).ready(function()
-        {
-            var snaps = [320, 480, 768, 1024, 1280]; // array for snap/marks in background.
-            var lowerLimit = 240; // smallest width of viewport.
-            var currentURL = 'http://morganesque.com/'; // default starting URL (well wouldn't you?)
+        $(document).ready(function () {
+            // array for snap/marks in background.
+            var snaps = [320, 480, 768, 1024, 1280];
+            // smallest width of viewport.
+            var lowerLimit = 240;
+            // default starting URL (well wouldn't you?)P
+            var currentURL = 'http://morganesque.com/';
             if (document.location.search.substr(5) !== '') {
-                currentURL = document.location.search.substr(5); // checking we don't already have a new URL.
+                // checking we don't already have a new URL.
+                currentURL = document.location.search.substr(5);
             }
-            var currentWidth = 240 + Math.floor(Math.random()*784); // default starting width (random).
+            // default starting width (random).
+            var currentWidth = 240 + Math.floor(Math.random()*784);
 
             // grab the .wrapper container div and add in the handle.
             var container = $('.wrapper').css({position:'relative'});
             container.prepend('<a href="#" class="handle"></a>');
-            var cover = $('.cover'); // grab the cover (for preventing stray mouse events)
-            var winw = $(window).width(); // width of the full window.
-            var z_idx, drg_h, drg_w, pos_y, pos_x; // a few vars for helping drag
-            var handle = $('.handle'); // the handle (added above).
+            // grab the cover (for preventing stray mouse events)
+            var cover = $('.cover');
+            // width of the full window.
+            var winw = $(window).width();
+            // a few vars for helping drag
+            var z_idx, drg_h, drg_w, pos_y, pos_x;
+            // the handle (added above).
+            var handle = $('.handle');
+            // global storage for keystroke capture
+            var keysDown = [];
 
             /*
                 Watching for keystrokes (so we can hijack refreshes)
             */
-            var keysDown = [];
-            $(window).on('keydown', function(e)
-            {
-                // if it's CMD or 'r' add it to the list (we're waiting for both).
-                if (e.keyCode == 91 || e.keyCode == 82 || e.keyCode == 17) keysDown.push(e.keyCode);
+            $(window).on('keydown', function (e) {
+                // shall we step in?
+                var takeover = false;
 
-                var takeover = false; // shall we step in?
+                // if it's CMD or 'r' add it to the list (we're waiting for both).
+                if ([91,82,17].indexOf(e.keyCode) !== -1) {
+                    keysDown.push(e.keyCode);
+                }
 
                 // if two keys are being pressed.
-                if (keysDown.length == 2)
-                {
-                    if (keysDown.indexOf(91) > -1 && keysDown.indexOf(82) > -1) takeover = true; // Mac - CMD + r
-                    else if (keysDown.indexOf(17) > -1 && keysDown.indexOf(82) > -1) takeover = true; // Win - CTRL + r
-                }
-                else {
-                    if (e.keyCode == 116) takeover = true; // F5
+                if (keysDown.length === 2) {
+                    if (keysDown.indexOf(91) > -1 && keysDown.indexOf(82) > -1) {
+                        takeover = true; // Mac - CMD + r
+                    } else if (keysDown.indexOf(17) > -1 && keysDown.indexOf(82) > -1) {
+                        takeover = true; // Win - CTRL + r
+                    }
+                } else {
+                    // F5
+                    takeover = (e.keyCode === 116);
                 }
 
-                if (takeover) // if we're going to do this thing.
-                {
+                // if we're going to do this thing.
+                if (takeover) {
                     console.log('stopping keystrokes');
-                    e.preventDefault(); // stop normal functions.
+                    // stop normal functions.
+                    e.preventDefault();
                     // refresh iframe.
-                    $( '#iframe' ).attr( 'src', function ( i, val ) { return val; });
+                    $('#iframe').attr('src', function (i, val) {
+                        return val;
+                    });
                     keysDown = [];
                 }
             });
 
             // all keyup's wipe clean the multiple keys array.
-            $(window).on('keyup', function(e){keysDown=[];});
+            $(window).on('keyup', function (e) {
+                keysDown=[];
+            });
 
             /*
                 Listening for changes in the URL.
             */
             // window.onpopstate = function(e)
-            $(window).on('popstate', function(e)
-            {
-                // console.log('pop');
-                // console.log(history);
-                // console.log(document.location);
-                // return;
-
-                if (history.state !== null) num  = history.state.number;
-                else num = document.location.hash.substr(1);
-
+            $(window).on('popstate', function (e) {
+                // console.log('pop', history, document.location); return;
+                var num = (history.state !== null) ?
+                        history.state.number : document.location.hash.substr(1);
                 var url = document.location.search.substr(5);
-                if (url !== '') currentURL = url;
+
+                if (url !== '') {
+                    currentURL = url;
+                }
 
                 $('#iframe').attr('src', currentURL);
                 $('.url input').val(currentURL);
 
-                if (num !== '') currentWidth = num;
+                if (num !== '') {
+                     currentWidth = num;
+                }
 
                 container.width(currentWidth);
-                handle.css({left:currentWidth+'px'});
+                handle.css({ left: currentWidth + 'px' });
                 handle.text(currentWidth);
             });
 
-            handle.on('click', function(e){e.preventDefault();}); // ignore normal clicks.
+            // ignore normal clicks.
+            handle.on('click', function (e) {
+                e.preventDefault();
+            });
 
-            handle.on('mousedown', function(e)
-            {
+            handle.on('mousedown', function (e) {
                 // cover the whole thing coz we're only after mousemove and mouseup events now!
                 cover.show();
 
@@ -267,118 +286,134 @@
                 drg_w = handle.outerWidth(),
                 pos_y = handle.offset().top + drg_h - e.pageY,
                 pos_x = handle.offset().left + drg_w - e.pageX;
-
             });
 
             /*
                 Make sure default dragging behaviour still applies
                 (but to this link only) (see below for why I had to add this)
             */
-            $('.book a').on('dragstart', function(e){
-                e.stopPropagation(); // stops $(window) below getting (and then preventing) the event.
+            $('.book a').on('dragstart', function (e) {
+                // stops $(window) below getting (and then preventing) the event.
+                e.stopPropagation();
             });
 
             /*
                 Stops the default dragging behaviour overtaking/interrupting what we're attempting to do.
             */
-            $(window).on('dragstart', function(e){
+            $(window).on('dragstart', function (e) {
                 e.preventDefault();
             });
 
             /*
-                Listen for mousemove at the heighest level.
+                Listen for mousemove at the highest level.
             */
-            $(window).on("mousemove", function(e)
-            {
-                if (handle.hasClass('draggable'))
-                {
+            $(window).on("mousemove", function (e) {
+                if (handle.hasClass('draggable')) {
                     var t = e.pageY + pos_y - drg_h;
                     var l = e.pageX + pos_x - drg_w;
-
                     var answer = 2 * (l - winw/2);
 
-                    if (answer < lowerLimit)
-                    {
+                    if (answer < lowerLimit) {
                         answer = lowerLimit;
                         l = winw/2 + lowerLimit/2;
                     } else {
-
                         var snap = 20;
                         for (var i = snaps.length - 1; i >= 0; i--) {
                             var n = snaps[i];
-                            if (Math.abs(answer-n) < snap)
-                            {
+                            if (Math.abs(answer-n) < snap) {
                                 answer = n;
                                 l = 1 + winw/2 + n/2;
                             }
-                        };
+                        }
                     }
 
-                    var ems = Math.round((answer/16), 0);
-                    handle.text(answer+ ' : '+ems+'em');
-                    container.width(answer);
-                    handle.css({top:Math.round(t, 0)+'px', left:answer+'px'});
+                    // default to browser default size
+                    var frameFontSize = 16;
+                    // get the calculated body font size for the iframe
+                    // currently only works with browsers that support a dev
+                    // mode cross-domain security policy Google Chrome
+                    // --disable-web-security, Safari Developer Menu "Disable
+                    // local file restrictions"
+                    var frame = document.getElementById('iframe');
+                    var iDoc = (frame.contentWindow || frame.contentDocument);
+                    iDoc = iDoc.document || iDoc;
+                    if (frame.currentStyle) {
+                        frameFontSize = iDoc.body.currentStyle['fontSize'];
+                    } else if (window.getComputedStyle) {
+                        frameFontSize = window.getComputedStyle(iDoc.body).getPropertyValue('font-size').replace('px', '');
+                    }
 
-                    // handle.offset({
-                    //      top:Math.round(t, 0)
-                    //     , left:Math.round(l, 0)
-                    // });
+                    var ems = Math.round((answer/frameFontSize), 0);
+                    handle.text(answer + ' : ' + ems + 'em');
+                    container.width(answer);
+                    handle.css({
+                        top: Math.round(t, 0) + 'px',
+                        left: answer + 'px'
+                    });
+
+                    //handle.offset({
+                    //    top: Math.round(t, 0),
+                    //    left: Math.round(l, 0)
+                    //});
                 }
 
-            }).on("mouseup", function() // mouseup end it all...
-            {
+            }).on("mouseup", function () { // mouseup end it all...
                 // console.log('up');
                 cover.hide();
                 handle.removeClass('draggable').css('z-index', z_idx);
                 var num = container.width();
                 // document.location.href = '#'+num;
-                history.pushState({number:num}, '', '#'+num);
+                history.pushState({number:num}, '', '#' + num);
             });
 
             /*
                 If the URL is changed ... change it (in iframe and history).
             */
-            $('.url input').on('change', function(val)
-            {
+            $('.url input').on('change', function(val) {
                 // console.log('URL change');
                 var url = $(this).val();
-                $( '#iframe' ).attr('src', url);
+                $('#iframe').attr('src', url);
                 var num = container.width();
-                history.pushState({number:num, url:url}, '', '?url='+url+'#'+num);
+                history.pushState({
+                    number: num,
+                    url: url
+                }, '', '?url=' + url + '#' + num);
             });
 
             /*
                 Oh yeah and stick those markers at the top.
             */
-            function renderSnaps()
-            {
+            function renderSnaps() {
                 $('.markers').empty();
                 for (var i = snaps.length - 1; i >= 0; i--) {
                     var num = parseInt(snaps[i]);
-                    var mark = $('<div class="mark">'+num+'</div>').css({left:(num/2)});
+                    var mark = $('<div class="mark">' + num + '</div>').css({
+                        left: (num/2)
+                    });
                     $('.markers').append(mark);
-                };
+                }
             }
 
             /*
                 If the markers string is changed ... check it! change it! and re-render that baby!
             */
-            $('.marks input').on('change', function()
-            {
+            $('.marks input').on('change', function() {
                 var tmp = $(this).val().split(',');
                 snaps = [];
                 for (var i = tmp.length - 1; i >= 0; i--) {
                     var n = parseInt(tmp[i]);
-                    if (n !== 0 && !isNaN(n) && n > lowerLimit) snaps.push(n);
-                };
-                snaps.sort(function(a, b){return a - b;});
+                    if (n !== 0 && !isNaN(n) && n > lowerLimit) {
+                         snaps.push(n);
+                    }
+                }
+                snaps.sort(function (a, b) {
+                    return a - b;
+                });
                 $(this).val(snaps.join(','));
                 renderSnaps();
-
             }).val(snaps.join(','));
 
-            $('.bounce').on('click', function(e)
-            {
+            $('.bounce').on('click', function (e) {
                 e.preventDefault();
                 // console.log(currentURL);
                 window.location.href = currentURL;
@@ -411,7 +446,7 @@
     <div class="url controls"><input type="text" value="" placeholder="http://"/><label>URL</label></div>
     <div class="marks controls"><input type="text" value=""/><label>marks</label></div>
     <div class="info controls"><a href="#" class="bounce">bounce</a></div>
-    <div class="book"><p>Here's a<br />bookmarlet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div>
+    <div class="book"><p>Here's a<br />bookmarklet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div>
     <a href="https://github.com/morganesque/resphrame"><img style="position: absolute; bottom: 0; right: 0; border: 0; -webkit-transform: rotate(180deg); -moz-transform: rotate(180deg); -ms-transform: rotate(180deg); -o-transform: rotate(180deg); transform: rotate(180deg);" src="https://s3.amazonaws.com/github/ribbons/forkme_left_darkblue_121621.png" alt="Fork me on GitHub"></a>
 </body>
 </html>
