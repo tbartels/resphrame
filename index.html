@@ -1,9 +1,5 @@
 <!DOCTYPE html>
-<!--[if lt IE 7 ]> <html class="ie ie6 no-js"> <![endif]-->
-<!--[if IE 7 ]>    <html class="ie ie7 no-js"> <![endif]-->
-<!--[if IE 8 ]>    <html class="ie ie8 no-js"> <![endif]-->
-<!--[if IE 9 ]>    <html class="ie ie9 no-js"> <![endif]-->
-<!--[if gt IE 9]><!--><html class="no-js"><!--<![endif]-->
+<html>
 <head id="httpflies-head">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Resphrame - The Awfully Named Responsive Web Design Testing Tool.</title>
@@ -14,7 +10,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="google-site-verification" content="wSKP5qIKoOQR5QB9I0iWgtAbH4YI6-WX5ChqDnllrKQ" />
     <style>
         html, body {
             height: 100%;
@@ -184,8 +179,8 @@
                 currentURL = document.location.search.substr(5);
             }
             // default starting width (random).
-            var currentWidth = 240 + Math.floor(Math.random()*784);
-
+            var initialWidth = 240 + Math.floor(Math.random()*784);
+            var currentWidth = initialWidth;
             // grab the .wrapper container div and add in the handle.
             var container = $('.wrapper').css({position:'relative'});
             container.prepend('<a href="#" class="handle"></a>');
@@ -200,12 +195,10 @@
             // global storage for keystroke capture
             var keysDown = [];
 
-            /*
-                Watching for keystrokes (so we can hijack refreshes)
-            */
+            // Watching for keystrokes (so we can hijack refreshes)
             $(window).on('keydown', function (e) {
                 // shall we step in?
-                var takeover = false;
+                var takeover = (e.keyCode === 116); // F5 refresh
 
                 // if it's CMD or 'r' add it to the list (we're waiting for both).
                 if ([91,82,17].indexOf(e.keyCode) !== -1) {
@@ -219,14 +212,11 @@
                     } else if (keysDown.indexOf(17) > -1 && keysDown.indexOf(82) > -1) {
                         takeover = true; // Win - CTRL + r
                     }
-                } else {
-                    // F5
-                    takeover = (e.keyCode === 116);
                 }
 
                 // if we're going to do this thing.
                 if (takeover) {
-                    console.log('stopping keystrokes');
+                    //console.log('stopping keystrokes');
                     // stop normal functions.
                     e.preventDefault();
                     // refresh iframe.
@@ -235,17 +225,12 @@
                     });
                     keysDown = [];
                 }
+            }).on('keyup', function (e) {
+                // all keyup's wipe clean the multiple keys array.
+                keysDown = [];
             });
 
-            // all keyup's wipe clean the multiple keys array.
-            $(window).on('keyup', function (e) {
-                keysDown=[];
-            });
-
-            /*
-                Listening for changes in the URL.
-            */
-            // window.onpopstate = function(e)
+            // Listening for changes in the URL
             $(window).on('popstate', function (e) {
                 // console.log('pop', history, document.location); return;
                 var num = (history.state !== null) ?
@@ -259,13 +244,7 @@
                 $('#iframe').attr('src', currentURL);
                 $('.url input').val(currentURL);
 
-                if (num !== '') {
-                     currentWidth = num;
-                }
-
-                container.width(currentWidth);
-                handle.css({ left: currentWidth + 'px' });
-                handle.text(currentWidth);
+                setFrameSize(num);
             });
 
             // ignore normal clicks.
@@ -304,9 +283,7 @@
                 e.preventDefault();
             });
 
-            /*
-                Listen for mousemove at the highest level.
-            */
+            // Listen for mousemove at the highest level.
             $(window).on("mousemove", function (e) {
                 if (handle.hasClass('draggable')) {
                     var t = e.pageY + pos_y - drg_h;
@@ -327,48 +304,21 @@
                         }
                     }
 
-                    // default to browser default size
-                    var frameFontSize = 16;
-                    // get the calculated body font size for the iframe
-                    // currently only works with browsers that support a dev
-                    // mode cross-domain security policy Google Chrome
-                    // --disable-web-security, Safari Developer Menu "Disable
-                    // local file restrictions"
-                    var frame = document.getElementById('iframe');
-                    var iDoc = (frame.contentWindow || frame.contentDocument);
-                    iDoc = iDoc.document || iDoc;
-                    if (frame.currentStyle) {
-                        frameFontSize = iDoc.body.currentStyle['fontSize'];
-                    } else if (window.getComputedStyle) {
-                        frameFontSize = window.getComputedStyle(iDoc.body).getPropertyValue('font-size').replace('px', '');
-                    }
-
-                    var ems = Math.round((answer/frameFontSize), 0);
-                    handle.text(answer + ' : ' + ems + 'em');
-                    container.width(answer);
-                    handle.css({
-                        top: Math.round(t, 0) + 'px',
-                        left: answer + 'px'
-                    });
-
-                    //handle.offset({
-                    //    top: Math.round(t, 0),
-                    //    left: Math.round(l, 0)
-                    //});
+                    handle.css({ top: Math.round(t, 0) + 'px' });
+                    setFrameSize(answer)
                 }
-
             }).on("mouseup", function () { // mouseup end it all...
                 // console.log('up');
                 cover.hide();
                 handle.removeClass('draggable').css('z-index', z_idx);
                 var num = container.width();
                 // document.location.href = '#'+num;
-                history.pushState({number:num}, '', '#' + num);
+                // use replaceState for drag & drop, we don't need to traverse
+                // the history of our frame sizes
+                history.replaceState({ number: num }, '', '#' + num);
             });
 
-            /*
-                If the URL is changed ... change it (in iframe and history).
-            */
+            // If the URL is changed ... change it (in iframe and history).
             $('.url input').on('change', function(val) {
                 // console.log('URL change');
                 var url = $(this).val();
@@ -380,9 +330,7 @@
                 }, '', '?url=' + url + '#' + num);
             });
 
-            /*
-                Oh yeah and stick those markers at the top.
-            */
+            // Oh yeah and stick those markers at the top.
             function renderSnaps() {
                 $('.markers').empty();
                 for (var i = snaps.length - 1; i >= 0; i--) {
@@ -394,9 +342,7 @@
                 }
             }
 
-            /*
-                If the markers string is changed ... check it! change it! and re-render that baby!
-            */
+            // If the markers string is changed ... check it! change it! and re-render that baby!
             $('.marks input').on('change', function() {
                 var tmp = $(this).val().split(',');
                 snaps = [];
@@ -411,29 +357,74 @@
                 });
                 $(this).val(snaps.join(','));
                 renderSnaps();
+            }).on('click', function (e) {
+                // TODO: only works for webkit/moz
+                // clicking on a snap point resizes the frame
+                var target = e.target || window.event.srcElement;
+                var points = target.value;
+                // find the next comma
+                var end = points.indexOf(',', target.selectionStart);
+                // find the previous comma
+                var start = points.slice(0, target.selectionStart).lastIndexOf(',') + 1 || 0;
+
+                // fix the end position when it's the last item
+                var end = (end === -1) ? points.length : end;
+
+                //console.log(start, end, points.length, points.slice(start, end));
+                container.css({ transition: 'width 0.4s ease-in' });
+                handle.css({ transition: 'left 0.4s ease-in' });
+                setFrameSize(points.slice(start, end));
+                container.on('webkitTransitionEnd oTransitionEnd otransitionend transitionend msTransitionEnd', function () {
+                    // remove the transition when we're done
+                    container.css({ transition: '' });
+                    handle.css({ transition: '' });
+                });
             }).val(snaps.join(','));
 
             $('.bounce').on('click', function (e) {
                 e.preventDefault();
                 // console.log(currentURL);
                 window.location.href = currentURL;
-            }); //.text('hoha!');
+            });
 
             /*
                 Make it so Number 1. Make it so.
             */
-            function init()
-            {
+            function init() {
                 // console.log('init');
                 renderSnaps();
                 // sort out the URL.
                 $('#iframe').attr('src', currentURL);
                 $('.url input').val(currentURL);
-                // sort out the width.
-                container.width(currentWidth);
-                handle.css({left:currentWidth+'px'});
-                handle.text(currentWidth);
+                setFrameSize();
             }
+
+            var setFrameSize = function ( frameWidth ) {
+                var frameFontSize = 16, // default to browser user-agent base size
+                    frame, iDoc, ems;
+
+                currentWidth = parseInt(frameWidth) || initialWidth;
+
+                // get the calculated body font size for the iframe currently
+                // only works with a lax cross-domain security policy
+                // Google Chrome: --disable-web-security;
+                // Safari: Developer Menu "Disable local file restrictions"
+                try {
+                    frame = document.getElementById('iframe');
+                    iDoc = (frame.contentWindow || frame.contentDocument);
+                    iDoc = iDoc.document || iDoc;
+
+                    if (frame.currentStyle) {
+                        frameFontSize = iDoc.body.currentStyle['fontSize'];
+                    } else if (window.getComputedStyle) {
+                        frameFontSize = window.getComputedStyle(iDoc.body).getPropertyValue('font-size').replace('px', '');
+                    }
+                } catch (e) {}
+
+                container.width(currentWidth);
+                handle.text(currentWidth + 'px : ' + Math.round((currentWidth/frameFontSize), 0) + 'em');
+                handle.css({ left: currentWidth + 'px' });
+            };
 
             init();
         });
@@ -446,7 +437,6 @@
     <div class="url controls"><input type="text" value="" placeholder="http://"/><label>URL</label></div>
     <div class="marks controls"><input type="text" value=""/><label>marks</label></div>
     <div class="info controls"><a href="#" class="bounce">bounce</a></div>
-    <div class="book"><p>Here's a<br />bookmarklet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div>
-    <a href="https://github.com/morganesque/resphrame"><img style="position: absolute; bottom: 0; right: 0; border: 0; -webkit-transform: rotate(180deg); -moz-transform: rotate(180deg); -ms-transform: rotate(180deg); -o-transform: rotate(180deg); transform: rotate(180deg);" src="https://s3.amazonaws.com/github/ribbons/forkme_left_darkblue_121621.png" alt="Fork me on GitHub"></a>
+    <!-- div class="book"><p>Here's a<br />bookmarklet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div -->
 </body>
 </html>
