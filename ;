@@ -73,20 +73,20 @@
                     **/
 
                     // extract the data we need from the location object
-                    var locationData = {};
                     var newURL = self.options.initialURL;
                     var pairs = document.location.search.substring(1).split('&');
 
                     for (var i = 0; i < pairs.length; i++) {
                         var pair = pairs[i].split('=');
                         if (pair[0] == 'url') {
-                            locationData.frameURL = decodeURIComponent(pair[1]);
+                            newURL = decodeURIComponent(pair[1]);
                         }
                     }
 
-                    locationData.frameWidth = document.location.hash.substring(1) || self.options.initialWidth;
-
-                    return locationData;
+                    return {
+                        frameWidth: document.location.hash.substring(1),
+                        frameURL: newURL //document.location.search.substring(5)
+                    };
                 }
 
                 /** Public Functions **/
@@ -94,11 +94,29 @@
                 self.init = function () {
                     self.options = $.extend({}, ResPhrame.defaults, opts);
 
-                    // initial calls
                     self.renderHandle();
+                    self.updateMarksInput();
+                    self.setURL();
                     self.setWidth();
-                    self.updateMarksInput.apply(self.marks.find('input')[0]);
-                    self.updateURLInput.apply(self.url.find('input')[0]);
+
+                    //self.handle.on('mousedown.resphrame', function (evt) {
+                    //    /** cover the whole thing coz we're only after mousemove
+                    //    and mouseup events now!
+                    //    **/
+                    //    var cover = $('<div>');
+                    //    cover.addClass('cover');
+                    //    cover.show();
+
+                    //    // add class and bring to front (for dragging).
+                    //    handle.addClass('draggable').css('z-index', 1000);
+
+                    //    // grab and set the pertinent values.
+                    //    z_idx = handle.css('z-index'),
+                    //    drg_h = handle.outerHeight(),
+                    //    drg_w = handle.outerWidth(),
+                    //    pos_y = handle.offset().top + drg_h - e.pageY,
+                    //    pos_x = handle.offset().left + drg_w - e.pageX;
+                    //});
 
                     // Make sure default dragging behaviour still applies
                     // stops $(window) below getting (and then preventing) the event.
@@ -110,39 +128,38 @@
                     // Watching for keystrokes (so we can hijack refreshes)
                     $(window).on('keydown.resphrame', self.interceptReload);
 
-                    // ignore normal clicks on the handle
-                    //self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
-                    self.handle.on('dragstart', self.handleDragstart);
-                    self.handle.on('drag', self.handleDrag);
-                    self.handle.on('dragstop', self.handleDragstop);
-
                     self.url.on('change.resphrame', 'input', self.updateURLInput);
                     // clicking on a snap-mark updates the container width
                     self.marks.on('click.resphrame', 'input', self.snapClick);
                     self.marks.on('change.resphrame', 'input', self.updateMarksInput);
                     self.bounce.on('click.resphrame', self.bounceClick);
+                    // ignore normal clicks on the handle
+                    self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
 
+                    console.log(history.state);
                     return self;
                 };
 
                 self.setURL = function (newURL) {
-                    newURL = newURL ? { frameURL: newURL } : {};
-                    var newState = $.extend({}, parseLocation(), history.state, newURL)
+                    var newState = $.extend({}, parseLocation(),
+                             history.state, { frameURL: newURL })
                     var stateURL = '?url=' + newState.frameURL +
                              ((newState.frameWidth) ? '#' + newState.frameWidth : '');
                     // put our URL into the history
                     // pushState for URL updates so navigation feels normal
                     history.pushState(newState, '', stateURL);
+                    console.log('pushState', newState);
 
                     return self.updateFrameSrc();
                 };
 
                 self.setWidth = function (newWidth) {
-                    newWidth = newWidth ? { frameWidth: newWidth } : {};
-                    var newState = $.extend({}, parseLocation(), history.state, newWidth)
+                    var newState = $.extend({}, parseLocation(),
+                            history.state, { frameWidth: newWidth })
                     // replaceState for width changes, changing the width isn't
                     // excatly something we need to be able to navigate
                     history.replaceState(newState, '', '#' + newState.frameWidth);
+                    console.log('replaceState', newState);
 
                     return self.updateFrameSize();
                 };
@@ -158,10 +175,11 @@
                     /** Resize the iframe container to frameWidth, depending on
                     the type of browser
                     **/
-                    var newWidth = history.state.frameWidth;
+                    var newWidth = history.state.frameWidth || self.options.initialWidth;
                     (self.container.width() == newWidth) || self.container.width(newWidth);
 
-                    return self.updateHandleDisplay();
+                    console.log(history.state);
+                    return self.updateHandle();
                 };
 
                 self.updateFrameSrc = function (force) {
@@ -173,21 +191,25 @@
                         self.$ele.attr('src', newURL);
                     }
 
+                    console.log(history.state);
                     return self;
                 };
 
                 self.updateURLInput = function () {
                     // If the URL is changed ... change it (in iframe and history).
-                    this.value = this.value || parseLocation().frameURL;
-                    return self.setURL(this.value);
+                    if (!this.value) {
+                        this.value = parseLocation().frameURL;
+                    }
+
+                    self.setURL(this.value);
                 };
 
                 self.updateMarksInput = function () {
                     /** If the markers string is changed ... check it! change
                     it! and re-render that baby!
                     **/
-                    var newSnaps = (this.value)
-                            ? this.value.split(self.options.snapsDivider)
+                    var newSnaps = (self.marks.find('input').val())
+                            ? self.marks.find('input').val().split(self.options.snapsDivider)
                             : self.options.snaps;
                     self.options.snaps = [];
 
@@ -203,7 +225,7 @@
                     self.options.snaps.sort(function (a, b) {
                         return a - b;
                     });
-                    this.value = self.options.snaps.join(self.options.snapsDivider);
+                    self.marks.find('input').val(self.options.snaps.join(self.options.snapsDivider));
                     // redraw the snap points
                     self.renderSnaps();
 
@@ -253,7 +275,7 @@
                     self.container.on(transitions, function () {
                         // remove the transition when we're done
                         self.container.css({ transition: '' });
-                        self.updateHandleDisplay();
+                        self.updateHandle();
                     });
 
                     return self.setWidth(point);
@@ -269,15 +291,14 @@
                     **/
                     self.handle = $('<a>');
                     self.handle.attr('href', '#');
-                    self.handle.attr('draggable', true);
                     self.handle.addClass('handle');
                     self.handle.text('');
                     self.handle.prependTo(self.container);
 
-                    return self.updateHandleDisplay();
+                    return self.updateHandle();
                 };
 
-                self.updateHandleDisplay = function () {
+                self.updateHandle = function () {
                     /** Calculate iframe (container) dimensions, update the
                     handle's left position and output the new dimensions to the
                     handle for all to see.
@@ -311,55 +332,20 @@
                     return self;
                 };
 
-                self.handleDragstart = function (evt) {
-                    console.log('handleDragstart');
-                    // cover the whole thing coz we're only after mousemove and mouseup events now!
-                    self.showCover();
-                    // add class and bring to front (for dragging).
-                    self.handle.addClass('draggable').css('z-index', 1000);
-
-                //    // grab and set the pertinent values.
-                //    z_idx = handle.css('z-index'),
-                //    drg_h = handle.outerHeight(),
-                //    drg_w = handle.outerWidth(),
-                //    pos_y = handle.offset().top + drg_h - e.pageY,
-                //    pos_x = handle.offset().left + drg_w - e.pageX;
+                self.handleMousedown = function () {
                 };
 
-                self.handleDrag = function (evt) {
-                //    if (handle.hasClass('draggable')) {
-                //        var t = e.pageY + pos_y - drg_h;
-                //        var l = e.pageX + pos_x - drg_w;
-                //        var answer = 2 * (l - winw/2);
-
-                //        if (answer < lowerLimit) {
-                //            answer = lowerLimit;
-                //            l = winw/2 + lowerLimit/2;
-                //        } else {
-                //            var snap = 20;
-                //            for (var i = snaps.length - 1; i >= 0; i--) {
-                //                var n = snaps[i];
-                //                if (Math.abs(answer-n) < snap) {
-                //                    answer = n;
-                //                    l = 1 + winw/2 + n/2;
-                //                }
-                //            }
-                //        }
-
-                //        handle.css({ top: Math.round(t, 0) + 'px' });
-                //        setFrameSize(answer)
-                //    }
+                self.handleDrag = function () {
                 };
 
-                self.handleDragstop = function (evt) {
-                    console.log('handleMouseup');
-                    self.hideCover();
-                //    handle.removeClass('draggable').css('z-index', z_idx);
-                //    var num = container.width();
-                //    // document.location.href = '#'+num;
-                //    // use replaceState for drag & drop, we don't need to traverse
-                //    // the history of our frame sizes
-                //    history.replaceState({ number: num }, '', '#' + num);
+                self.handleMouseup = function () {
+                    cover.hide();
+                    handle.removeClass('draggable').css('z-index', z_idx);
+                    var num = container.width();
+                    // document.location.href = '#'+num;
+                    // use replaceState for drag & drop, we don't need to traverse
+                    // the history of our frame sizes
+                    history.replaceState({ number: num }, '', '#' + num);
                 };
 
                 self.interceptReload = function (evt) {
@@ -377,17 +363,6 @@
                     return self;
                 };
 
-                self.showCover = function () {
-                    var cover = $('<div>');
-                    cover.addClass('cover');
-                    self.container.before(cover);
-                    cover.show();
-                };
-
-                self.hideCover = function () {
-                    $('.cover').remove();
-                };
-
                 // self initializing?
                 //self.init();
             };
@@ -397,7 +372,7 @@
                 snapsDivider: ',',
                 lowerLimit: 240,
                 initialURL: 'http://www.google.com',
-                initialWidth: 240 + Math.floor(Math.random() * 784),
+                initialWidth: 240 * Math.floor(Math.random() * 784),
                 // default to browser user-agent base size
                 baseFontSize: 16
             };
@@ -439,7 +414,31 @@
             var keysDown = [];
 
             //// Listen for mousemove at the highest level.
-            //$(window).on("mousemove", function (e) { })
+            //$(window).on("mousemove", function (e) {
+            //    if (handle.hasClass('draggable')) {
+            //        var t = e.pageY + pos_y - drg_h;
+            //        var l = e.pageX + pos_x - drg_w;
+            //        var answer = 2 * (l - winw/2);
+
+            //        if (answer < lowerLimit) {
+            //            answer = lowerLimit;
+            //            l = winw/2 + lowerLimit/2;
+            //        } else {
+            //            var snap = 20;
+            //            for (var i = snaps.length - 1; i >= 0; i--) {
+            //                var n = snaps[i];
+            //                if (Math.abs(answer-n) < snap) {
+            //                    answer = n;
+            //                    l = 1 + winw/2 + n/2;
+            //                }
+            //            }
+            //        }
+
+            //        handle.css({ top: Math.round(t, 0) + 'px' });
+            //        setFrameSize(answer)
+            //    }
+            //}).on("mouseup", function () { // mouseup end it all...
+            //});
         });
     </script>
 </head>
