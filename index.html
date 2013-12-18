@@ -14,7 +14,7 @@
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
         body { background-color: #D7D6D7; font-family: sans-serif; }
         .handle { display: block; position: absolute; width: 110px; height: 50px; top: 50px; left: 100%; background: black; text-decoration: none; color: white; text-align: center; line-height: 50px; cursor: col-resize; white-space: nowrap; }
-        .wrapper { display: block; width: 320px; height: 100%; margin: 0 auto; border: none; background-color: white; -webkit-box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); }
+        .wrapper { display: block; width: 320px; height: 100%; margin: 0 auto; border: none; background-color: white; -webkit-box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); position: relative; }
         .cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 20; cursor: col-resize; background-color: rgba(0, 0, 0, 0.1); }
         iframe { width: 100%; height: 100%; /* pointer-events: none; */ border: none; }
         #test { position: absolute; top: 0; left: 0; background: white; padding: 0.5em; }
@@ -37,7 +37,7 @@
         .markers { position: absolute; width: 50%; height: 100%; top: 0; left: 50%; }
         .mark { height: 100%; border-left: 1px solid rgba(255, 255, 255, 0.42); color: rgba(255, 255, 255, 0.76); position: absolute; top: 0; left: 0; font-size: 12px; padding: 0.25em; }
     </style>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script>
         (function ($, document, window, undefined) {
             "use strict";
@@ -57,7 +57,8 @@
                 /** Private Functions **/
 
                 var caretPosition = function (ele) {
-                    /** TODO: only working for webkit/moz
+                    /** find the position of a text cursor/caret in a form input
+                    TODO: only working for webkit/moz
                     **/
                     if (ele.selectionStart) { // webkit/moz
                         return ele.selectionStart;
@@ -74,17 +75,20 @@
 
                     // extract the data we need from the location object
                     var locationData = {};
-                    var newURL = self.options.initialURL;
+                    var width = parseInt(document.location.hash.substring(1));
                     var pairs = document.location.search.substring(1).split('&');
 
                     for (var i = 0; i < pairs.length; i++) {
                         var pair = pairs[i].split('=');
                         if (pair[0] == 'url') {
+                            // we're only interested in the url key
                             locationData.frameURL = decodeURIComponent(pair[1]);
                         }
                     }
 
-                    locationData.frameWidth = document.location.hash.substring(1) || self.options.initialWidth;
+                    if (width) {
+                        locationData.frameWidth = width;
+                    }
 
                     return locationData;
                 }
@@ -94,12 +98,13 @@
                 self.init = function () {
                     self.options = $.extend({}, ResPhrame.defaults, opts);
 
-                    // initial calls
+                    // initial setup
                     self.renderHandle();
                     self.setWidth();
                     self.updateMarksInput.apply(self.marks.find('input')[0]);
                     self.updateURLInput.apply(self.url.find('input')[0]);
 
+                    // Event Bindings
                     // Make sure default dragging behaviour still applies
                     // stops $(window) below getting (and then preventing) the event.
                     $('.book a').on('dragstart', function (evt) { evt.stopPropagation(); });
@@ -111,10 +116,11 @@
                     $(window).on('keydown.resphrame', self.interceptReload);
 
                     // ignore normal clicks on the handle
-                    //self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
-                    self.handle.on('dragstart', self.handleDragstart);
-                    self.handle.on('drag', self.handleDrag);
-                    self.handle.on('dragstop', self.handleDragstop);
+                    self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
+                    // make the handle draggable
+                    self.handle.on('mousedown', self.handleDragstart);
+                    $(window).on('mousemove', self.handleDrag);
+                    self.handle.on('mouseup', self.handleDragend);
 
                     self.url.on('change.resphrame', 'input', self.updateURLInput);
                     // clicking on a snap-mark updates the container width
@@ -125,53 +131,49 @@
                     return self;
                 };
 
-                self.setURL = function (newURL) {
+                self.setURL = function (newURL, force) {
                     newURL = newURL ? { frameURL: newURL } : {};
-                    var newState = $.extend({}, parseLocation(), history.state, newURL)
+                    var newState = $.extend({}, self.options.initialState,
+                            parseLocation(), history.state, newURL)
                     var stateURL = '?url=' + newState.frameURL +
                              ((newState.frameWidth) ? '#' + newState.frameWidth : '');
                     // put our URL into the history
                     // pushState for URL updates so navigation feels normal
                     history.pushState(newState, '', stateURL);
 
-                    return self.updateFrameSrc();
-                };
-
-                self.setWidth = function (newWidth) {
-                    newWidth = newWidth ? { frameWidth: newWidth } : {};
-                    var newState = $.extend({}, parseLocation(), history.state, newWidth)
-                    // replaceState for width changes, changing the width isn't
-                    // excatly something we need to be able to navigate
-                    history.replaceState(newState, '', '#' + newState.frameWidth);
-
-                    return self.updateFrameSize();
-                };
-
-                self.updateFrame = function () {
-                    self.updateFrameSize();
-                    self.updateFrameSrc();
+                    /** update/refresh the src element on the iframe
+                    **/
+                    // only update if we are forced, or the url is something new
+                    if (force || self.$ele.attr('src') !== newState.frameURL) {
+                        self.$ele.attr('src', newState.frameURL);
+                    }
 
                     return self;
                 };
 
-                self.updateFrameSize = function () {
-                    /** Resize the iframe container to frameWidth, depending on
-                    the type of browser
+                self.setWidth = function (newWidth, blockHist) {
+                    /** Resize the iframe container
                     **/
-                    var newWidth = history.state.frameWidth;
-                    (self.container.width() == newWidth) || self.container.width(newWidth);
+                    newWidth = newWidth ? { frameWidth: newWidth } : {};
+                    var newState = $.extend({}, self.options.initialState,
+                            parseLocation(), history.state, newWidth)
 
-                    return self.updateHandleDisplay();
+                    if (self.container.width() !== newState.frameWidth ||
+                            self.container.width() !== history.state.frameWidth) {
+                        // use replaceState for width changes, width changes
+                        // aren't really something we need to navigate
+                        !blockHist && history.replaceState(newState, '', '#' + newState.frameWidth);
+                        self.container.width(newState.frameWidth);
+                        self.updateHandleDisplay();
+                    }
+
+                    return self;
                 };
 
-                self.updateFrameSrc = function (force) {
-                    /** update/refresh the src element on the iframe
-                    **/
-                    var newURL = history.state.frameURL || self.options.initialURL;
-                    // only update if we are forced, or the url is something new
-                    if (force || self.$ele.attr('src') !== newURL) {
-                        self.$ele.attr('src', newURL);
-                    }
+                self.updateFrame = function () {
+                    console.log('updateFrame');
+                    self.setWidth();
+                    self.setURL();
 
                     return self;
                 };
@@ -260,8 +262,13 @@
                 };
 
                 self.bounceClick = function (evt) {
+                    /** get us out of here! Use the history state object if we
+                    can, otherwise parse the URL and redirect
+                    **/
                     evt.preventDefault();
-                    window.location.href = history.state.frameURL;
+                    window.location.href = (history.state && history.state.frameURL)
+                            ? history.state.frameURL
+                            : parseLocation()['frameURL'] ;
                 };
 
                 self.renderHandle = function () {
@@ -269,7 +276,7 @@
                     **/
                     self.handle = $('<a>');
                     self.handle.attr('href', '#');
-                    self.handle.attr('draggable', true);
+                    //self.handle.attr('draggable', true);
                     self.handle.addClass('handle');
                     self.handle.text('');
                     self.handle.prependTo(self.container);
@@ -312,61 +319,81 @@
                 };
 
                 self.handleDragstart = function (evt) {
-                    console.log('handleDragstart');
+                    /**
+                    **/
+                    var $this = $(this);
                     // cover the whole thing coz we're only after mousemove and mouseup events now!
                     self.showCover();
-                    // add class and bring to front (for dragging).
-                    self.handle.addClass('draggable').css('z-index', 1000);
 
-                //    // grab and set the pertinent values.
-                //    z_idx = handle.css('z-index'),
-                //    drg_h = handle.outerHeight(),
-                //    drg_w = handle.outerWidth(),
-                //    pos_y = handle.offset().top + drg_h - e.pageY,
-                //    pos_x = handle.offset().left + drg_w - e.pageX;
+                    // grab and set the pertinent values.
+                    self.handle.data('handleDrag', {
+                        z_idx: $this.css('z-index'),
+                        handleStartTop: parseInt($this.css('top')),
+                        frameStartWidth: self.container.width(),
+                        startX: evt.pageX,
+                        startY: evt.pageY
+                    });
+
+                    // add class and bring to front (for dragging).
+                    self.handle.addClass('draggable').css('z-index', 999);
                 };
 
                 self.handleDrag = function (evt) {
-                //    if (handle.hasClass('draggable')) {
-                //        var t = e.pageY + pos_y - drg_h;
-                //        var l = e.pageX + pos_x - drg_w;
-                //        var answer = 2 * (l - winw/2);
+                    // only bother if the handle is draggable (mousedown activated)
+                    if (self.handle.hasClass('draggable')) {
+                        var blockUpdate = true;
+                        var pos = self.getNewDragPos(evt);
 
-                //        if (answer < lowerLimit) {
-                //            answer = lowerLimit;
-                //            l = winw/2 + lowerLimit/2;
-                //        } else {
-                //            var snap = 20;
-                //            for (var i = snaps.length - 1; i >= 0; i--) {
-                //                var n = snaps[i];
-                //                if (Math.abs(answer-n) < snap) {
-                //                    answer = n;
-                //                    l = 1 + winw/2 + n/2;
-                //                }
-                //            }
-                //        }
-
-                //        handle.css({ top: Math.round(t, 0) + 'px' });
-                //        setFrameSize(answer)
-                //    }
+                        // update handle top and container width without history.state
+                        self.handle.css('top', pos.top + 'px');
+                        self.setWidth(pos.width, blockUpdate);
+                    }
                 };
 
-                self.handleDragstop = function (evt) {
-                    console.log('handleMouseup');
+                self.handleDragend = function (evt) {
                     self.hideCover();
-                //    handle.removeClass('draggable').css('z-index', z_idx);
-                //    var num = container.width();
-                //    // document.location.href = '#'+num;
-                //    // use replaceState for drag & drop, we don't need to traverse
-                //    // the history of our frame sizes
-                //    history.replaceState({ number: num }, '', '#' + num);
+                    // remove draggable flag and resume the original z order
+                    self.handle.removeClass('draggable').css(
+                            'z-index', self.handle.data('handleDrag').z_idx);
+                    var pos = self.getNewDragPos(evt);
+                    // update history.state with final width
+                    self.setWidth(pos.width);
+                };
+
+                self.getNewDragPos = function (evt) {
+                    /** calculate new X and Y positions taking into account the
+                    snap points and lower limit
+                    **/
+                    var data = self.handle.data('handleDrag');
+                    var dX = data.startX - evt.pageX;
+                    var dY = data.startY - evt.pageY;
+                    var newWidth = data.frameStartWidth - (dX * 2);
+
+                    if (newWidth < self.options.lowerLimit) {
+                        // don't go below the configured lower limit
+                        newWidth = self.options.lowerLimit;
+                    } else {
+                        // adjust to snap points
+                        for (var point in self.options.snaps) {
+                            var snapPoint = self.options.snaps[point];
+                            if (Math.abs(newWidth - snapPoint) < self.options.snapDist) {
+                                newWidth = snapPoint;
+                            }
+                        }
+                    }
+
+                    return {
+                        width: newWidth,
+                        top: data.handleStartTop - dY
+                    };
                 };
 
                 self.interceptReload = function (evt) {
                     /* Catch f5, <ctrl>-r, <cmd>-r keystrokes and reload the
                     frame instead
                     */
-                    if ((evt.keyCode == 82 && (evt.ctrlKey || evt.metaKey)) || evt.keyCode === 116) {
+                    if ((evt.keyCode == 82 && (evt.ctrlKey || evt.metaKey))
+                            || evt.keyCode === 116) {
                         evt.preventDefault();
                         // refresh iframe.
                         self.$ele.attr('src', function (i, val) {
@@ -395,9 +422,12 @@
             ResPhrame.defaults = {
                 snaps: [320, 480, 768, 1024, 1280],
                 snapsDivider: ',',
+                snapDist: 20,
                 lowerLimit: 240,
-                initialURL: 'http://www.google.com',
-                initialWidth: 240 + Math.floor(Math.random() * 784),
+                initialState: {
+                    frameURL: 'http://morganesque.com',
+                    frameWidth: 240 + Math.floor(Math.random() * 784)
+                },
                 // default to browser user-agent base size
                 baseFontSize: 16
             };
@@ -410,36 +440,7 @@
         }(jQuery, document, window));
 
         $(document).ready(function () {
-            $('#iframe').resPhrame({ initialURL: 'http://morganesque.com' });
-
-            // array for snap/marks in background.
-            var snaps = [320, 480, 768, 1024, 1280];
-            // smallest width of viewport.
-            var lowerLimit = 240;
-            // default starting URL (well wouldn't you?)P
-            var currentURL = 'http://morganesque.com/';
-            if (document.location.search.substr(5) !== '') {
-                // checking we don't already have a new URL.
-                currentURL = document.location.search.substr(5);
-            }
-            // default starting width (random).
-            var initialWidth = 240 + Math.floor(Math.random()*784);
-            var currentWidth = initialWidth;
-            // grab the .wrapper container div and add in the handle.
-            var container = $('.wrapper').css({position:'relative'});
-            // grab the cover (for preventing stray mouse events)
-            var cover = $('.cover');
-            // width of the full window.
-            var winw = $(window).width();
-            // a few vars for helping drag
-            var z_idx, drg_h, drg_w, pos_y, pos_x;
-            // the handle (added above).
-            var handle = $('.handle');
-            // global storage for keystroke capture
-            var keysDown = [];
-
-            //// Listen for mousemove at the highest level.
-            //$(window).on("mousemove", function (e) { })
+            $('#iframe').resPhrame();
         });
     </script>
 </head>
