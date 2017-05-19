@@ -1,455 +1,468 @@
 <!DOCTYPE html>
 <html>
-<head id="httpflies-head">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Resphrame - The Awfully Named Responsive Web Design Testing Tool.</title>
-    <meta charset="utf-8">
-    <meta name="title" content="Resphrame - The Awfully Named Responsive Web Design Testing Tool.">
-    <meta name="author" content="Tom Morgan - Morganesque - http://morganesque.com/">
-    <meta name="Copyright" content="Copyright Tom Morgan 2013. All Rights Reserved.">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-        body { background-color: #D7D6D7; font-family: sans-serif; }
-        .handle { display: block; position: absolute; width: 110px; height: 50px; top: 50px; left: 100%; background: black; text-decoration: none; color: white; text-align: center; line-height: 50px; cursor: col-resize; white-space: nowrap; }
-        .wrapper { display: block; width: 320px; height: 100%; margin: 0 auto; border: none; background-color: white; -webkit-box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); position: relative; }
-        .cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 20; cursor: col-resize; background-color: rgba(0, 0, 0, 0.1); }
-        iframe { width: 100%; height: 100%; /* pointer-events: none; */ border: none; }
-        #test { position: absolute; top: 0; left: 0; background: white; padding: 0.5em; }
-        iframe::-webkit-scrollbar { display: none; }
-        iframe::-moz-scrollbar { display:none; }
-        .controls { position: absolute; display: block; top: 0px; left: -334px; padding: 0; background: black; color: white; -webkit-transition: left 0.5s ease-out; -moz-transition: left 0.5s ease-out; -o-transition: left 0.5s ease-out; transition: left 0.5s ease-out; }
-        .controls:hover { left: 0; }
-        .marks { top: 38px; left: -214px; }
-        .marks input { width: 200px; }
-        .info { top: 76px; left: 0px; }
-        .book { position: absolute; bottom: 0px; left: 0px; padding: 0.5em; font-size: 0.88em; }
-        .book p { font-size: 0.88em; margin-bottom: 0.25em; }
-        .book a, .info a { padding: 8px; background: white; font-size: 0.88em; line-height: 32px; text-decoration: none; color: blue; }
-        .info a:focus, .info a:hover { color: red; }
-        label { font-size: 0.88em; background: black; line-height: 32px; }
-        label.controls input { margin-right: 8px; }
-        label.controls { padding-right: 8px; }
-        input { border:0;outline:0;margin:0;padding:7px;width:320px;font:1.3em/1.4 monospace;}
-        input:focus { margin: 0; padding: 7px; border: none; outline: none; }
-        .markers { position: absolute; width: 50%; height: 100%; top: 0; left: 50%; }
-        .mark { height: 100%; border-left: 1px solid rgba(255, 255, 255, 0.42); color: rgba(255, 255, 255, 0.76); position: absolute; top: 0; left: 0; font-size: 12px; padding: 0.25em; }
-    </style>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script>
-        (function ($, document, window, undefined) {
-            "use strict";
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Resphrame - The Awfully Named Responsive Web Design Testing Tool.</title>
+  <meta name="title" content="Resphrame - The Awfully Named Responsive Web Design Testing Tool.">
+  <meta name="author" content="Tom Morgan - Morganesque - http://morganesque.com/">
+  <meta name="Copyright" content="Copyright Tom Morgan 2013. All Rights Reserved.">
+  <meta name="viewport" content="width=device-width,initial-scale=1,max-scale=1,user-scalable=yes">
+  <!-- script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!--
+  -->
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    body { background-color: #D7D6D7; font-family: sans-serif; }
+    .handle { display: block; position: absolute; width: 110px; height: 50px; top: 50px; left: 100%; background: black; text-decoration: none; color: white; text-align: center; line-height: 50px; cursor: col-resize; white-space: nowrap; }
+    .wrapper { display: block; width: 320px; height: 100%; margin: 0 auto; border: none; background-color: white; -webkit-box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); box-shadow: 0px 0px 76px 5px rgba(0, 0, 0, 0.19); position: relative; }
+    .cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 20; cursor: col-resize; background-color: rgba(0, 0, 0, 0.1); }
+    iframe { width: 100%; height: 100%; /* pointer-events: none; */ border: none; }
+    #test { position: absolute; top: 0; left: 0; background: white; padding: 0.5em; }
+    iframe::-webkit-scrollbar { display: none; }
+    iframe::-moz-scrollbar { display:none; }
+    .controls { position: absolute; display: block; top: 0px; left: -334px; padding: 0; background: black; color: white; -webkit-transition: left 0.5s ease-out; -moz-transition: left 0.5s ease-out; -o-transition: left 0.5s ease-out; transition: left 0.5s ease-out; }
+    .controls:hover { left: 0; }
+    .snaps-list { top: 38px; left: -214px; }
+    .snaps-list input { width: 200px; }
+    .info { top: 76px; left: 0px; }
+    .book { position: absolute; bottom: 0px; left: 0px; padding: 0.5em; font-size: 0.88em; }
+    .book p { font-size: 0.88em; margin-bottom: 0.25em; }
+    .book a, .info a { padding: 8px; background: white; font-size: 0.88em; line-height: 32px; text-decoration: none; color: blue; }
+    .info a:focus, .info a:hover { color: red; }
+    label { font-size: 0.88em; background: black; line-height: 32px; }
+    label.controls input { margin-right: 8px; }
+    label.controls { padding-right: 8px; }
+    input { border:0;outline:0;margin:0;padding:7px;width:320px;font:1.3em/1.4 monospace;}
+    input:focus { margin: 0; padding: 7px; border: none; outline: none; }
+    .snaps { position: absolute; width: 50%; height: 100%; top: 0; left: 50%; }
+    .snap { height: 100%; border-left: 1px solid rgba(255, 255, 255, 0.42); color: rgba(255, 255, 255, 0.76); position: absolute; top: 0; left: 0; font-size: 12px; padding: 0.25em; }
+  </style>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script>
+  (function ($, document, window, undefined) {
+    "use strict";
 
-            var ResPhrame = function (ele, opts) {
-                /** Responsive Frame
-                **/
-                var self = this;
-                self.ele = ele;
-                self.$ele = $(ele);
-                self.container = self.$ele.parent();
-                self.marks = $('.marks');
-                self.snapsContainer = $('.markers');
-                self.url = $('.url');
-                self.bounce = $('.bounce');
+    var ResPhrame = function (ele, opts) {
+      /** Responsive Frame
+      **/
+      var self = this;
+      self.ele = ele;
+      self.$ele = $(ele);
+      self.container = self.$ele.parent();
+      self.snapsList = $('.snaps-list');
+      self.snapsContainer = $('.snaps');
+      self.url = $('.url');
+      self.bounce = $('.bounce');
 
-                /** Private Functions **/
+      /** Private Functions **/
 
-                var caretPosition = function (ele) {
-                    /** find the position of a text cursor/caret in a form input
-                    TODO: only working for webkit/moz
-                    **/
-                    if (ele.selectionStart) { // webkit/moz
-                        return ele.selectionStart;
-                    } else if (document.selection && document.selection.createRange) { // IE
-                        //var range = document.selection.createRange();
-                    }
+      var caretPosition = function (ele) {
+        /** find the position of a text cursor/caret in a form input
+        TODO: only working for webkit/moz
+        **/
+        if (ele.selectionStart) { // webkit/moz
+          return ele.selectionStart;
+        } else if (document.selection && document.selection.createRange) { // IE
+          //var range = document.selection.createRange();
+        }
 
-                    return false;
-                }
+        return false;
+      }
 
-                var parseLocation = function () {
-                    /** extract the width and URL from the document location
-                    **/
+      var parseLocation = function () {
+        /** extract the width and URL from the document location
+        **/
 
-                    // extract the data we need from the location object
-                    var locationData = {};
-                    var width = parseInt(document.location.hash.substring(1));
-                    var pairs = document.location.search.substring(1).split('&');
+        // extract the data we need from the location object
+        var locationData = {};
+        var width = parseInt(document.location.hash.substring(1));
+        var pairs = document.location.search.substring(1).split('&');
 
-                    for (var i = 0; i < pairs.length; i++) {
-                        var pair = pairs[i].split('=');
-                        if (pair[0] == 'url') {
-                            // we're only interested in the url key
-                            locationData.frameURL = decodeURIComponent(pair[1]);
-                        }
-                    }
+        for (var i = 0; i < pairs.length; i++) {
+          var pair = pairs[i].split('=');
+          if (pair[0] == 'url') {
+            // we're only interested in the url key
+            locationData.frameURL = decodeURIComponent(pair[1]);
+          }
+        }
 
-                    if (width) {
-                        locationData.frameWidth = width;
-                    }
+        if (width) {
+          locationData.frameWidth = width;
+        }
 
-                    return locationData;
-                }
+        return locationData;
+      }
 
-                /** Public Functions **/
+      /** Public Functions **/
 
-                self.init = function () {
-                    self.options = $.extend({}, ResPhrame.defaults, opts);
+      self.init = function () {
+        self.options = $.extend({}, ResPhrame.defaults, opts);
 
-                    // initial setup
-                    self.renderHandle();
-                    self.setWidth();
-                    self.updateMarksInput.apply(self.marks.find('input')[0]);
-                    self.updateURLInput.apply(self.url.find('input')[0]);
+        // initial setup
+        self.renderHandle();
+        self.setWidth();
+        self.updateSnapsInput.apply(self.snapsList.find('input')[0]);
+        self.updateURLInput.apply(self.url.find('input')[0]);
 
-                    // Event Bindings
-                    // Make sure default dragging behaviour still applies
-                    // stops $(window) below getting (and then preventing) the event.
-                    $('.book a').on('dragstart', function (evt) { evt.stopPropagation(); });
-                    // Stops the default dragging behaviour overtaking/interrupting what we're attempting to do.
-                    $(window).on('dragstart.resphrame', function (evt) { evt.preventDefault(); });
-                    // Listening for changes in the URL
-                    $(window).on('popstate.resphrame', self.updateFrame);
-                    // Watching for keystrokes (so we can hijack refreshes)
-                    $(window).on('keydown.resphrame', self.interceptReload);
+        // Event Bindings
+        // Make sure default dragging behaviour still applies
+        // stops $(window) below getting (and then preventing) the event.
+        $('.book a').on('dragstart', function (evt) { evt.stopPropagation(); });
+        // Stops the default dragging behaviour overtaking/interrupting what we're attempting to do.
+        $(window).on('dragstart.resphrame', function (evt) { evt.preventDefault(); });
+        // Listening for changes in the URL
+        $(window).on('popstate.resphrame', self.updateFrame);
+        // Watching for keystrokes (so we can hijack refreshes)
+        $(window).on('keydown.resphrame', self.interceptReload);
 
-                    // ignore normal clicks on the handle
-                    self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
-                    // make the handle draggable
-                    self.handle.on('mousedown', self.handleDragstart);
-                    $(window).on('mousemove', self.handleDrag);
-                    self.handle.on('mouseup', self.handleDragend);
+        // ignore normal clicks on the handle
+        self.handle.on('click.resphrame', function (evt) { evt.preventDefault(); });
+        // make the handle draggable
+        self.handle.on('mousedown', self.handleDragstart);
+        $(window).on('mousemove', self.handleDrag);
+        self.handle.on('mouseup', self.handleDragend);
+        // and for touch devices
+        //self.handle.on('touchstart', self.handleDragstart);
+        //$(window).on('touchmove', self.handleDrag);
+        //self.handle.on'touchstop', self.handleDragend);
 
-                    self.url.on('change.resphrame', 'input', self.updateURLInput);
-                    // clicking on a snap-mark updates the container width
-                    self.marks.on('click.resphrame', 'input', self.snapClick);
-                    self.marks.on('change.resphrame', 'input', self.updateMarksInput);
-                    self.bounce.on('click.resphrame', self.bounceClick);
+        self.snapsContainer.on('touchstart', self.handleSnapsTouchStart);
 
-                    return self;
-                };
+        self.url.on('change.resphrame', 'input', self.updateURLInput);
+        // clicking on a snap point updates the container width
+        self.snapsList.on('click.resphrame', 'input', self.snapClick);
+        self.snapsList.on('change.resphrame', 'input', self.updateSnapsInput);
+        self.bounce.on('click.resphrame', self.bounceClick);
 
-                self.setURL = function (newURL, force) {
-                    newURL = newURL ? { frameURL: newURL } : {};
-                    var newState = $.extend({}, self.options.initialState,
-                            parseLocation(), history.state, newURL)
-                    var stateURL = '?url=' + newState.frameURL +
-                             ((newState.frameWidth) ? '#' + newState.frameWidth : '');
-                    // put our URL into the history
-                    // pushState for URL updates so navigation feels normal
-                    history.pushState(newState, '', stateURL);
+        return self;
+      };
 
-                    /** update/refresh the src element on the iframe
-                    **/
-                    // only update if we are forced, or the url is something new
-                    if (force || self.$ele.attr('src') !== newState.frameURL) {
-                        self.$ele.attr('src', newState.frameURL);
-                    }
+      self.setURL = function (newURL, force) {
+        newURL = newURL ? { frameURL: newURL } : {};
+        var newState = $.extend({}, self.options.initialState,
+            parseLocation(), history.state, newURL)
+        var stateURL = '?url=' + newState.frameURL +
+            ((newState.frameWidth) ? '#' + newState.frameWidth : '');
+        // put our URL into the history
+        // pushState for URL updates so navigation feels normal
+        history.pushState(newState, '', stateURL);
 
-                    return self;
-                };
+        /** update/refresh the src element on the iframe
+        **/
+        // only update if we are forced, or the url is something new
+        if (force || self.$ele.attr('src') !== newState.frameURL) {
+          self.$ele.attr('src', newState.frameURL);
+        }
 
-                self.setWidth = function (newWidth, blockHist) {
-                    /** Resize the iframe container
-                    **/
-                    newWidth = newWidth ? { frameWidth: newWidth } : {};
-                    var newState = $.extend({}, self.options.initialState,
-                            parseLocation(), history.state, newWidth)
+        return self;
+      };
 
-                    if (self.container.width() !== newState.frameWidth ||
-                            self.container.width() !== history.state.frameWidth) {
-                        // use replaceState for width changes, width changes
-                        // aren't really something we need to navigate
-                        !blockHist && history.replaceState(newState, '', '#' + newState.frameWidth);
-                        self.container.width(newState.frameWidth);
-                        self.updateHandleDisplay();
-                    }
+      self.setWidth = function (newWidth, blockHist) {
+        /** Resize the iframe container
+        **/
+        newWidth = newWidth ? { frameWidth: newWidth } : {};
+        var newState = $.extend({}, self.options.initialState,
+            parseLocation(), history.state, newWidth)
 
-                    return self;
-                };
+        if (self.container.width() !== newState.frameWidth ||
+            self.container.width() !== history.state.frameWidth) {
+          // use replaceState for width changes, width changes
+          // aren't really something we need to navigate
+          !blockHist && history.replaceState(newState, '', '#' + newState.frameWidth);
+          self.container.width(newState.frameWidth);
+          self.updateHandleDisplay();
+        }
 
-                self.updateFrame = function () {
-                    console.log('updateFrame');
-                    self.setWidth();
-                    self.setURL();
+        return self;
+      };
 
-                    return self;
-                };
+      self.updateFrame = function () {
+        self.setWidth();
+        self.setURL();
 
-                self.updateURLInput = function () {
-                    // If the URL is changed ... change it (in iframe and history).
-                    this.value = this.value || parseLocation().frameURL;
-                    return self.setURL(this.value);
-                };
+        return self;
+      };
 
-                self.updateMarksInput = function () {
-                    /** If the markers string is changed ... check it! change
-                    it! and re-render that baby!
-                    **/
-                    var newSnaps = (this.value)
-                            ? this.value.split(self.options.snapsDivider)
-                            : self.options.snaps;
-                    self.options.snaps = [];
+      self.updateURLInput = function () {
+        // If the URL is changed ... change it (in iframe and history).
+        this.value = this.value || parseLocation().frameURL;
+        return self.setURL(this.value);
+      };
 
-                    // ensure numerics and push snap points into our array
-                    for (var snap in newSnaps) {
-                        var point = parseInt(newSnaps[snap]);
-                        if (point && point >= self.options.lowerLimit) {
-                            self.options.snaps.push(point)
-                        }
-                    }
+      self.updateSnapsInput = function () {
+        /** If the snap points string is changed ... check it! change
+        it! and re-render that baby!
+        **/
+        var newSnaps = (this.value)
+            ? this.value.split(self.options.snapsDivider)
+            : self.options.snaps;
+        self.options.snaps = [];
 
-                    // write the new snap positions back out to the input
-                    self.options.snaps.sort(function (a, b) {
-                        return a - b;
-                    });
-                    this.value = self.options.snaps.join(self.options.snapsDivider);
-                    // redraw the snap points
-                    self.renderSnaps();
+        // ensure numerics and push snap points into our array
+        for (var snap in newSnaps) {
+          var point = parseInt(newSnaps[snap]);
+          if (point && point >= self.options.lowerLimit) {
+            self.options.snaps.push(point)
+          }
+        }
 
-                    return self;
-                };
-
-                self.renderSnaps = function () {
-                    /* Draw out the gridline widths for the snap targets, unlike
-                    Handle, these are simply destroyed and recreated as needed
-                    */
-                    self.snapsContainer.empty();
-                    for (var i = self.options.snaps.length - 1; i >= 0; i--) {
-                        var width = parseInt(self.options.snaps[i]);
-                        var mark = $('<div>');
-                        mark.addClass('mark');
-                        mark.text(width);
-                        mark.css({ left: (width / 2) });
-                        self.snapsContainer.append(mark);
-                    }
-
-                    return self;
-                };
-
-                self.snapClick = function (evt) {
-                    /** clicking on a snap point resizes the frame
-                    **/
-                    var target = evt.target || window.event.srcElement;
-                    var points = target.value;
-                    // find the previous comma
-                    var start = points.slice(0, caretPosition(target) || 0).lastIndexOf(self.options.snapsDivider) + 1 || 0;
-                    // find the next separator
-                    var end = points.indexOf(self.options.snapsDivider, caretPosition(target) || 0);
-                    // adjust the end position when it's the last item
-                    end = (end === -1) ? points.length : end;
-
-                    var point = points.slice(start, end);
-                    // all the transitions! ... did we miss any?
-                    var transitions = [
-                        'transitionend',
-                        'otransitionend',
-                        'oTransitionEnd',
-                        'msTransitionEnd',
-                        'webkitTransitionEnd'
-                    ].join(' ');
-
-                    self.container.css({ transition: 'width 0.4s ease-in' });
-                    self.container.on(transitions, function () {
-                        // remove the transition when we're done
-                        self.container.css({ transition: '' });
-                        self.updateHandleDisplay();
-                    });
-
-                    return self.setWidth(point);
-                };
-
-                self.bounceClick = function (evt) {
-                    /** get us out of here! Use the history state object if we
-                    can, otherwise parse the URL and redirect
-                    **/
-                    evt.preventDefault();
-                    window.location.href = (history.state && history.state.frameURL)
-                            ? history.state.frameURL
-                            : parseLocation()['frameURL'] ;
-                };
-
-                self.renderHandle = function () {
-                    /** Build and output the draggable handle
-                    **/
-                    self.handle = $('<a>');
-                    self.handle.attr('href', '#');
-                    //self.handle.attr('draggable', true);
-                    self.handle.addClass('handle');
-                    self.handle.text('');
-                    self.handle.prependTo(self.container);
-
-                    return self.updateHandleDisplay();
-                };
-
-                self.updateHandleDisplay = function () {
-                    /** Calculate iframe (container) dimensions, update the
-                    handle's left position and output the new dimensions to the
-                    handle for all to see.
-                    **/
-                    var frameWidth = self.container.width(),
-                        iDoc, ems;
-
-                    if (self.handle) {
-                        try {
-                            // get the calculated body font size for the iframe
-                            // only works with a lax cross-domain security policy
-                            // Google Chrome: --disable-web-security;
-                            // Safari: Developer Menu "Disable local file restrictions"
-                            iDoc = (self.ele.contentWindow || self.ele.contentDocument);
-                            iDoc = iDoc.document || iDoc;
-
-                            if (self.ele.currentStyle) {
-                                self.options.baseFontSize = iDoc.body.currentStyle['fontSize'];
-                            } else if (window.getComputedStyle) {
-                                self.options.baseFontSize = window.getComputedStyle(iDoc.body).getPropertyValue('font-size').replace('px', '');
-                            }
-                        } catch (err) {
-                            // abandon all hope if it doesn't work, our default
-                            // width will have to do
-                        }
-
-                        ems = Math.round((frameWidth / self.options.baseFontSize), 0);
-                        self.handle.text(frameWidth + 'px : ' + ems + 'em');
-                    }
-
-                    return self;
-                };
-
-                self.handleDragstart = function (evt) {
-                    /**
-                    **/
-                    var $this = $(this);
-                    // cover the whole thing coz we're only after mousemove and mouseup events now!
-                    self.showCover();
-
-                    // grab and set the pertinent values.
-                    self.handle.data('handleDrag', {
-                        z_idx: $this.css('z-index'),
-                        handleStartTop: parseInt($this.css('top')),
-                        frameStartWidth: self.container.width(),
-                        startX: evt.pageX,
-                        startY: evt.pageY
-                    });
-
-                    // add class and bring to front (for dragging).
-                    self.handle.addClass('draggable').css('z-index', 999);
-                };
-
-                self.handleDrag = function (evt) {
-                    // only bother if the handle is draggable (mousedown activated)
-                    if (self.handle.hasClass('draggable')) {
-                        var blockUpdate = true;
-                        var pos = self.getNewDragPos(evt);
-
-                        // update handle top and container width without history.state
-                        self.handle.css('top', pos.top + 'px');
-                        self.setWidth(pos.width, blockUpdate);
-                    }
-                };
-
-                self.handleDragend = function (evt) {
-                    self.hideCover();
-                    // remove draggable flag and resume the original z order
-                    self.handle.removeClass('draggable').css(
-                            'z-index', self.handle.data('handleDrag').z_idx);
-                    var pos = self.getNewDragPos(evt);
-                    // update history.state with final width
-                    self.setWidth(pos.width);
-                };
-
-                self.getNewDragPos = function (evt) {
-                    /** calculate new X and Y positions taking into account the
-                    snap points and lower limit
-                    **/
-                    var data = self.handle.data('handleDrag');
-                    var dX = data.startX - evt.pageX;
-                    var dY = data.startY - evt.pageY;
-                    var newWidth = data.frameStartWidth - (dX * 2);
-
-                    if (newWidth < self.options.lowerLimit) {
-                        // don't go below the configured lower limit
-                        newWidth = self.options.lowerLimit;
-                    } else {
-                        // adjust to snap points
-                        for (var point in self.options.snaps) {
-                            var snapPoint = self.options.snaps[point];
-                            if (Math.abs(newWidth - snapPoint) < self.options.snapDist) {
-                                newWidth = snapPoint;
-                            }
-                        }
-                    }
-
-                    return {
-                        width: newWidth,
-                        top: data.handleStartTop - dY
-                    };
-                };
-
-                self.interceptReload = function (evt) {
-                    /* Catch f5, <ctrl>-r, <cmd>-r keystrokes and reload the
-                    frame instead
-                    */
-                    if ((evt.keyCode == 82 && (evt.ctrlKey || evt.metaKey))
-                            || evt.keyCode === 116) {
-                        evt.preventDefault();
-                        // refresh iframe.
-                        self.$ele.attr('src', function (i, val) {
-                            return val;
-                        });
-                    }
-
-                    return self;
-                };
-
-                self.showCover = function () {
-                    var cover = $('<div>');
-                    cover.addClass('cover');
-                    self.container.before(cover);
-                    cover.show();
-                };
-
-                self.hideCover = function () {
-                    $('.cover').remove();
-                };
-
-                // self initializing?
-                //self.init();
-            };
-
-            ResPhrame.defaults = {
-                snaps: [320, 480, 768, 1024, 1280],
-                snapsDivider: ',',
-                snapDist: 20,
-                lowerLimit: 240,
-                initialState: {
-                    frameURL: 'http://morganesque.com',
-                    frameWidth: 240 + Math.floor(Math.random() * 784)
-                },
-                // default to browser user-agent base size
-                baseFontSize: 16
-            };
-
-            $.fn.resPhrame = function (options) {
-                return this.each(function () {
-                    (new ResPhrame(this, options).init());
-                });
-            };
-        }(jQuery, document, window));
-
-        $(document).ready(function () {
-            $('#iframe').resPhrame();
+        // write the new snap positions back out to the input
+        self.options.snaps.sort(function (a, b) {
+          return a - b;
         });
-    </script>
+        this.value = self.options.snaps.join(self.options.snapsDivider);
+        // redraw the snap points
+        self.renderSnaps();
+
+        return self;
+      };
+
+      self.renderSnaps = function () {
+        /* Draw out the gridline widths for the snap targets, unlike
+        Handle, these are simply destroyed and recreated as needed
+        */
+        self.snapsContainer.empty();
+        for (var i = self.options.snaps.length - 1; i >= 0; i--) {
+          var width = parseInt(self.options.snaps[i]);
+          var snap = $('<div>');
+          snap.addClass('snap');
+          snap.text(width);
+          snap.css({ left: (width / 2) });
+          self.snapsContainer.append(snap);
+        }
+
+        return self;
+      };
+
+      self.snapClick = function (evt) {
+        /** clicking on a snap point resizes the frame
+        **/
+        var target = evt.target || window.event.srcElement;
+        var points = target.value;
+        // find the previous comma
+        var start = points.slice(0, caretPosition(target) || 0).lastIndexOf(self.options.snapsDivider) + 1 || 0;
+        // find the next separator
+        var end = points.indexOf(self.options.snapsDivider, caretPosition(target) || 0);
+        // adjust the end position when it's the last item
+        end = (end === -1) ? points.length : end;
+
+        var point = points.slice(start, end);
+        // all the transitions! ... did we miss any?
+        var transitions = [
+          'transitionend',
+          'otransitionend',
+          'oTransitionEnd',
+          'msTransitionEnd',
+          'webkitTransitionEnd'
+        ].join(' ');
+
+        self.container.css({ transition: 'width 0.4s ease-in' });
+        self.container.on(transitions, function () {
+          // remove the transition when we're done
+          self.container.css({ transition: '' });
+          self.updateHandleDisplay();
+        });
+
+        return self.setWidth(point);
+      };
+
+      self.bounceClick = function (evt) {
+        /** get us out of here! Use the history state object if we
+        can, otherwise parse the URL and redirect
+        **/
+        evt.preventDefault();
+        window.location.href = (history.state && history.state.frameURL)
+            ? history.state.frameURL
+            : parseLocation()['frameURL'];
+      };
+
+      self.renderHandle = function () {
+        /** Build and output the draggable handle
+        **/
+        self.handle = $('<a>');
+        self.handle.attr('href', '#');
+        //self.handle.attr('draggable', true);
+        self.handle.addClass('handle');
+        self.handle.text('');
+        self.handle.prependTo(self.container);
+
+        return self.updateHandleDisplay();
+      };
+
+      self.updateHandleDisplay = function () {
+        /** Calculate iframe (container) dimensions, update the
+        handle's left position and output the new dimensions to the
+        handle for all to see.
+        **/
+        var frameWidth = self.container.width(),
+          iDoc, ems;
+
+        if (self.handle) {
+          try {
+            // get the calculated body font size for the iframe
+            // only works with a lax cross-domain security policy
+            // Google Chrome: --disable-web-security;
+            // Safari: Developer Menu "Disable local file restrictions"
+            iDoc = (self.ele.contentWindow || self.ele.contentDocument);
+            iDoc = iDoc.document || iDoc;
+
+            if (self.ele.currentStyle) {
+              self.options.baseFontSize = iDoc.body.currentStyle['fontSize'];
+            } else if (window.getComputedStyle) {
+              self.options.baseFontSize = window.getComputedStyle(iDoc.body).getPropertyValue('font-size').replace('px', '');
+            }
+          } catch (err) {
+            // abandon all hope if it doesn't work, our default
+            // width will have to do
+          }
+
+          ems = Math.round((frameWidth / self.options.baseFontSize), 0);
+          self.handle.text(frameWidth + 'px : ' + ems + 'em');
+        }
+
+        return self;
+      };
+
+      self.handleSnapsTouchStart = function (evt) {
+        /**
+        **/
+        console.log('handleSnapsTouchStart', evt.changedTouches[0]);
+      };
+
+      self.handleDragstart = function (evt) {
+        /**
+        **/
+        var $this = $(this);
+        // cover the whole thing coz we're only after mousemove and mouseup events now!
+        self.showCover();
+
+        // grab and set the pertinent values.
+        self.handle.data('handleDrag', {
+          z_idx: $this.css('z-index'),
+          handleStartTop: parseInt($this.css('top')),
+          frameStartWidth: self.container.width(),
+          startX: evt.pageX,
+          startY: evt.pageY
+        });
+
+        // add class and bring to front (for dragging).
+        self.handle.addClass('draggable').css('z-index', 999);
+      };
+
+      self.handleDrag = function (evt) {
+        // only bother if the handle is draggable (mousedown activated)
+        if (self.handle.hasClass('draggable')) {
+          var blockUpdate = true;
+          var pos = self.getNewDragPos(evt);
+
+          // update handle top and container width without history.state
+          self.handle.css('top', pos.top + 'px');
+            self.setWidth(pos.width, blockUpdate);
+        }
+      };
+
+      self.handleDragend = function (evt) {
+        self.hideCover();
+        // remove draggable flag and resume the original z order
+        self.handle.removeClass('draggable').css(
+          'z-index', self.handle.data('handleDrag').z_idx);
+        var pos = self.getNewDragPos(evt);
+        // update history.state with final width
+        self.setWidth(pos.width);
+      };
+
+      self.getNewDragPos = function (evt) {
+        /** calculate new X and Y positions taking into account the
+        snap points and lower limit
+        **/
+        var data = self.handle.data('handleDrag');
+        var dX = data.startX - evt.pageX;
+        var dY = data.startY - evt.pageY;
+        var newWidth = data.frameStartWidth - (dX * 2);
+
+        if (newWidth < self.options.lowerLimit) {
+          // don't go below the configured lower limit
+          newWidth = self.options.lowerLimit;
+        } else {
+          // adjust to snap points
+          for (var point in self.options.snaps) {
+            var snapPoint = self.options.snaps[point];
+            if (Math.abs(newWidth - snapPoint) < self.options.snapDist) {
+              newWidth = snapPoint;
+            }
+          }
+        }
+
+        return {
+          width: newWidth,
+          top: data.handleStartTop - dY
+        };
+      };
+
+      self.interceptReload = function (evt) {
+        /* Catch f5, <ctrl>-r, <cmd>-r keystrokes and reload the
+        frame instead
+        */
+        var ieReload = evt.keyCode === 116,
+          kitReload = (evt.keyCode == 82 && (evt.ctrlKey || evt.metaKey));
+
+        if ( kitReload || ieReload ) {
+          evt.preventDefault();
+          // refresh iframe.
+          self.$ele.attr('src', function (i, val) {
+            return val;
+          });
+        }
+
+        return self;
+      };
+
+      self.showCover = function () {
+        var cover = $('<div>');
+        cover.addClass('cover');
+        self.container.before(cover);
+        cover.show();
+      };
+
+      self.hideCover = function () {
+        $('.cover').remove();
+      };
+    };
+
+    ResPhrame.defaults = {
+      snaps: [320, 480, 600, 768, 900, 1024, 1280],
+      snapsDivider: ',',
+      snapDist: 20,
+      lowerLimit: 240,
+      initialState: {
+        frameURL: 'http://morganesque.com',
+        frameWidth: 240 + Math.floor(Math.random() * 784)
+      },
+      // default to browser user-agent base size
+      baseFontSize: 16
+    };
+
+    $.fn.resPhrame = function (options) {
+      return this.each(function () {
+        (new ResPhrame(this, options).init());
+      });
+    };
+  }(jQuery, document, window));
+
+  jQuery(document).ready(function () {
+    jQuery('#iframe').resPhrame();
+  });
+  </script>
 </head>
 <body>
-    <div class="markers"></div>
-    <div class="wrapper"><iframe id="iframe" src=""></iframe></div>
-    <label class="url controls"><input type="text" value="" placeholder="http://"/>URL</label>
-    <label class="marks controls"><input type="text" value=""/>marks</label>
-    <div class="info controls"><a href="#" class="bounce">bounce</a></div>
-    <!-- div class="book"><p>Here's a<br />bookmarklet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div -->
+   <div class="snaps"></div>
+   <div class="wrapper"><iframe id="iframe" src=""></iframe></div>
+   <label class="url controls"><input type="text" value="" placeholder="http://"/><span class="tab">URL</span></label>
+   <label class="snaps-list controls"><input type="text" value=""/><span class="tab">snaps</span></label>
+   <div class="info controls"><a href="#" class="bounce">bounce</a></div>
+   <!-- div class="book"><p>Here's a<br />bookmarklet!</p><a title="Open in Resphrame" href="javascript:(function(){(function(e,t){var url='http://morganesque.github.io/resphrame/?'+'url='+e.location.href;e.location.href=url;})(window)})();">↔ Resphrame</a></div -->
 </body>
 </html>
